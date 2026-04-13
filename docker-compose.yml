@@ -1,0 +1,73 @@
+services:
+# =====================================================================================
+# ENV DEV
+# =====================================================================================
+
+  rust-service-dev:
+    image: rust-service-dev
+    container_name: rust-service-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8200:8200"
+    volumes:
+      - .:/app
+      - cargo-registry-dev:/usr/local/cargo/registry
+      - cargo-git-dev:/usr/local/cargo/git
+    environment:
+      - PORT=8200
+      - DATABASE_URL=postgresql://postgres:postgres@rust-db-dev:5432/rust-db-dev
+    env_file:
+      - .env
+    depends_on:
+      - rust-db-dev
+    profiles: ["dev"]
+
+  rust-db-dev:
+    image: postgres:16
+    container_name: rust-db-dev
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    profiles: ["dev"]
+
+
+# =====================================================================================
+# ENV PROD
+# =====================================================================================
+
+  rust-service-prod:
+    container_name: rust-service-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8200:8200"
+    environment:
+      - PORT=8200
+    env_file:
+      - .env
+    depends_on:
+      - rust-db-prod
+    restart: unless-stopped
+    profiles: ["prod"]
+
+  rust-db-prod:
+    image: postgres:16
+    container_name: rust-db-prod
+    env_file:
+      - .env
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    restart: unless-stopped
+    profiles: ["prod"]
+
+volumes:
+  cargo-registry-dev:
+  cargo-git-dev:
+  pgdata-dev:
+  pgdata-prod:
